@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import NodePanel from '@/components/NodePanel';
 import Controls from '@/components/Controls';
 import IntroOverlay from '@/components/IntroOverlay';
 import AboutModal from '@/components/AboutModal';
 import { SystemNode, ViewMode } from '@/lib/types';
-import { graphData } from '@/lib/graphData';
+import { graphData, viewFilters } from '@/lib/graphData';
 
 const Graph = dynamic(() => import('@/components/Graph'), { ssr: false });
 
@@ -24,15 +25,38 @@ function buildNodeSelection(id: string): SystemNode | null {
   return { ...node, connections };
 }
 
-export default function Home() {
-  const [viewMode, setViewMode] = useState<ViewMode>('heat');
-  const [selectedNode, setSelectedNode] = useState<SystemNode | null>(null);
+const VALID_VIEWS = Object.keys(viewFilters) as ViewMode[];
+
+function MapContent() {
+  const searchParams = useSearchParams();
+
+  // Initialize state from URL params, fallback to defaults
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    const v = searchParams.get('view');
+    return v && VALID_VIEWS.includes(v as ViewMode) ? (v as ViewMode) : 'heat';
+  });
+
+  const [selectedNode, setSelectedNode] = useState<SystemNode | null>(() => {
+    const nodeParam = searchParams.get('node');
+    // Explicit node param → use it (or null if invalid)
+    if (nodeParam) return buildNodeSelection(nodeParam);
+    // No params at all → default experience with Craven
+    if (!searchParams.get('view')) return buildNodeSelection('craven');
+    // View set but no node → no preselection
+    return null;
+  });
+
   const [aboutOpen, setAboutOpen] = useState(false);
 
-  // Preselect Ed Craven on initial load
+  // Sync state → URL (using history API to avoid re-render cycle)
   useEffect(() => {
-    setSelectedNode(buildNodeSelection('craven'));
-  }, []);
+    const params = new URLSearchParams();
+    params.set('view', viewMode);
+    if (selectedNode) {
+      params.set('node', selectedNode.id);
+    }
+    window.history.replaceState(null, '', `?${params.toString()}`);
+  }, [viewMode, selectedNode]);
 
   return (
     <main className="app">
@@ -46,6 +70,7 @@ export default function Home() {
         />
         <NodePanel node={selectedNode} onClose={() => setSelectedNode(null)} />
       </div>
+      <div className="map-label">KICK SYSTEM MAP &mdash; MAR 2026</div>
       <button
         className="about-trigger"
         onClick={() => setAboutOpen(true)}
@@ -55,5 +80,13 @@ export default function Home() {
       </button>
       {aboutOpen && <AboutModal onClose={() => setAboutOpen(false)} />}
     </main>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense>
+      <MapContent />
+    </Suspense>
   );
 }

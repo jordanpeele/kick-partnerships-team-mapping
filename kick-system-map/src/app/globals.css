@@ -646,6 +646,22 @@ body {
   background: var(--text-dim);
 }
 
+/* ── MAP LABEL ── */
+
+.map-label {
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+  z-index: 5;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  opacity: 0.6;
+  font-weight: 500;
+  pointer-events: none;
+}
+
 /* ── ABOUT TRIGGER ── */
 
 .about-trigger {
