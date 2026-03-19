@@ -25,6 +25,9 @@ export default function Home() {
         />
         <NodePanel node={selectedNode} onClose={() => setSelectedNode(null)} />
       </div>
+      <div style={{ position: "fixed", bottom: 10, right: 10, fontSize: 12, opacity: 0.5 }}>
+        deploy test v1
+      </div>
     </main>
   );
 }
